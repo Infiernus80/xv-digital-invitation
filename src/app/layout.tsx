@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteConfig } from "@/lib/constants";
 import "./globals.css";
-import { DancingScript, MoonTime } from "@/lib/fonts";
+import { DancingScript, MoonTime, BadScript } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: SiteConfig.title,
@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${DancingScript.variable} ${MoonTime.variable}  antialiased`}
+        className={`${DancingScript.variable} ${MoonTime.variable} ${BadScript.variable} antialiased`}
       >
         {children}
       </body>

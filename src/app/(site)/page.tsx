@@ -15,7 +15,7 @@ import {
 export default function Page() {
   return (
     <main className="min-h-dvh bg-white">
-      <div className="mx-auto w-full max-w-[420px] overflow-hidden">
+      <div className="mx-auto w-full max-w-105 overflow-hidden">
         <CoverSection />
         <HeroSection />
         <MusicSection />

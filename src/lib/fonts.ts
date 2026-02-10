@@ -11,3 +11,9 @@ export const DancingScript = localFont({
   variable: "--font-dancing-script",
   display: "swap",
 });
+
+export const BadScript = localFont({
+  src: "../../public/fonts/BadScript-Regular.ttf",
+  variable: "--font-bad-script",
+  display: "swap",
+});

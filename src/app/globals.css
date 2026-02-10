@@ -13,3 +13,11 @@ body {
 .font-moon-time {
   font-family: var(--font-moon-time), serif;
 }
+
+.font-dancing-script {
+  font-family: var(--font-dancing-script), cursive;
+}
+
+.font-bad-script {
+  font-family: var(--font-bad-script), cursive;
+}

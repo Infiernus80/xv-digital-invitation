@@ -7,6 +7,7 @@ export default {
       fontFamily: {
         moonTime: ["var(--font-moon-time)", "serif"],
         dancingScript: ["var(--font-dancing-script)", "serif"],
+        badScript: ["var(--font-bad-script)", "cursive"],
       },
     },
   },
