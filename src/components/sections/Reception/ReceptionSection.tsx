@@ -15,7 +15,7 @@ export const ReceptionSection = () => {
           {/* Ilustración de copas con flores */}
           <div className="mb-6 flex justify-start">
             <Image
-              src="/images/reception/Reception.svg"
+              src="/images/Reception/Reception.svg"
               alt=""
               width={310}
               height={347}
@@ -33,7 +33,7 @@ export const ReceptionSection = () => {
         </div>
       </div>
       <Image
-        src="/images/reception/Original.jpeg"
+        src="/images/Reception/Original.jpeg"
         alt=""
         width={441}
         height={556}

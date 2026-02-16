@@ -66,6 +66,12 @@ export const RSVPModal = ({
       setLoadingInvite(false);
     }
   }, [code]);
+  useEffect(() => {
+    // Cuando llega un inviteCode desde la URL, pásalo al input interno
+    if (inviteCode) {
+      setCode(inviteCode);
+    }
+  }, [inviteCode]);
 
   useEffect(() => {
     if (isOpen && code) {

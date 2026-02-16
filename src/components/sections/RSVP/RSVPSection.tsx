@@ -4,7 +4,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { RSVPModal } from "./RSVPModal";
 
-export const RSVPSection = () => {
+type RSVPSectionProps = {
+  inviteCode?: string;
+};
+
+export const RSVPSection = ({ inviteCode = "" }: RSVPSectionProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -15,31 +19,32 @@ export const RSVPSection = () => {
             Confirma tu asistencia
           </h2>
 
-          <p className="mb-6 sm:mb-8 text-base sm:text-lg font-bad-script px-4">
-            Favor de confirmar antes del primero de enero
-          </p>
-
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-block rounded-full bg-[#F35A7EB3] px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg md:text-[18px] font-bad-script font-semibold text-white shadow-lg transition-all hover:bg-pink-400 hover:shadow-xl"
+            className="
+              w-62 h-12.25
+              inline-block rounded-full bg-[#F35A7EB3] px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg md:text-[18px] font-bad-script font-semibold text-white shadow-lg transition-all hover:bg-pink-400 hover:shadow-xl"
           >
             Confirmar
           </button>
 
-          {/* Decoración floral inferior */}
           <div className="my-8 sm:my-10 md:my-12 flex justify-center">
             <Image
               src="/images/message/linea.svg"
               alt=""
               width={600}
               height={20}
-              className="w-full max-w-[600px] h-auto"
+              className="w-full max-w-150 h-auto"
             />
           </div>
         </div>
       </div>
 
-      <RSVPModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <RSVPModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        inviteCode={inviteCode}
+      />
     </section>
   );
 };
