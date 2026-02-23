@@ -12,7 +12,7 @@ export const DateSection = () => {
   });
 
   useEffect(() => {
-    const targetDate = new Date("2026-03-21T21:00:00");
+    const targetDate = new Date("2026-03-21T20:00:00");
 
     const calculateTimeLeft = () => {
       const now = new Date();
@@ -42,7 +42,7 @@ export const DateSection = () => {
 
   return (
     <section className="w-full mt-10">
-      <div className="mx-auto max-w-110 overflow-hidden rounded-lg bg-white shadow-lg">
+      <div className="mx-auto  overflow-hidden rounded-lg bg-white shadow-lg">
         {/* Imagen superior */}
         <div className="flex w-full justify-center">
           <Image

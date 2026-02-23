@@ -8,11 +8,11 @@ export function HeroSection(props: HeroSectionProps) {
   const title = props.title ?? "Mis XV Años";
 
   return (
-    <section className="w-full bg-white">
+    <section className="w-screen bg-white">
       {/* Landing: ancho fijo del diseño (440). Alto automático */}
-      <div className="mx-auto w-full ">
+      <div className="mx-auto w-screen ">
         {/* Contenedor relativo para posicionar todo como Figma */}
-        <div className="relative w-full overflow-hidden bg-white">
+        <div className="relative w-screen overflow-hidden bg-white">
           {/* Imagen principal (define el alto real del hero) */}
           <div className="flex items-center">
             <div className="relative h-142.75 w-screen">
@@ -27,9 +27,9 @@ export function HeroSection(props: HeroSectionProps) {
           </div>
 
           {/* Recuadro + título (absolute encima de la imagen) */}
-          <div className="absolute top-81.25 h-21 w-full">
+          <div className="absolute top-81.25 h-21 w-screen">
             {/* Recuadro blanco 55% */}
-            <div className="h-full w-full bg-white/55" />
+            <div className="h-full w-screen bg-white/55" />
 
             {/* Texto */}
             <p className="font-dancing-script absolute inset-x-0 top-4 text-center text-[56px] leading-14 text-slate-800">

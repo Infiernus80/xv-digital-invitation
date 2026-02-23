@@ -9,7 +9,7 @@ export const ReceptionSection = () => {
             Recepción
           </h2>
           <p className="mb-4 font-dancing-script text-2xl">
-            Mandú Salón a las 09:00 p.m.
+            Mandú Salón a las 10:00 p.m.
           </p>
 
           {/* Ilustración de copas con flores */}

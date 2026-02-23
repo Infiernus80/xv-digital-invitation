@@ -21,3 +21,60 @@ body {
 .font-bad-script {
   font-family: var(--font-bad-script), cursive;
 }
+
+/* Cover "full bleed" manteniendo el artboard 440x855 (como tu 2da foto) */
+.cover-viewport {
+  --w: 440;
+  --h: 855;
+
+  /* COVER: llena pantalla (puede recortar un poco) */
+  --s: max(calc(100vw / var(--w)), calc(100svh / var(--h)));
+
+  width: 100vw;
+  min-height: 100svh;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fff;
+}
+
+.cover-stage {
+  width: calc(var(--w) * 1px);
+  height: calc(var(--h) * 1px);
+
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+
+  transform: scale(var(--s));
+  transform-origin: center;
+}
+
+.sponsors-viewport {
+  --w: 600;
+  --h: 600;
+
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  /* separaciones */
+  padding: 3.75rem 0;
+  /* equivalente a mt-15 visual */
+  background: #fff;
+}
+
+.sponsors-stage {
+  /* CONTAIN: que quepa completo dentro del ancho disponible */
+  --s: min(calc((100vw - 24px) / var(--w)), 1);
+
+  width: calc(var(--w) * 1px);
+  height: calc(var(--h) * 1px);
+
+  position: relative;
+  transform: scale(var(--s));
+  transform-origin: top center;
+}
