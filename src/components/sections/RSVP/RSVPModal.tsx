@@ -51,6 +51,7 @@ export const RSVPModal = ({
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
 
   // Sync code from URL
+
   useEffect(() => {
     if (inviteCode) setCode(inviteCode);
   }, [inviteCode]);
@@ -283,6 +284,11 @@ export const RSVPModal = ({
   const stepLabel =
     step === 1 ? "Código" : step === 2 ? "Tu nombre" : "Acompañantes";
   const progress = step === 1 ? "w-1/3" : step === 2 ? "w-2/3" : "w-full";
+
+  // Evitar mostrar el modal si la invitación ya está confirmada
+  if (inviteData && inviteData.status === "confirmed") {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 p-4">
