@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { calculateTickets } from "@/lib/ticketUtils";
 
 type Companion = {
   id: string;
@@ -14,6 +13,7 @@ type RSVPModalProps = {
   isOpen: boolean;
   onClose: () => void;
   inviteCode?: string;
+  onConfirmed?: () => void;
 };
 
 type InviteData = {
@@ -35,6 +35,7 @@ export const RSVPModal = ({
   isOpen,
   onClose,
   inviteCode = "",
+  onConfirmed,
 }: RSVPModalProps) => {
   const [step, setStep] = useState<Step>(1);
 
@@ -119,18 +120,6 @@ export const RSVPModal = ({
     () => companions.filter((c) => c.full_name.trim().length > 0),
     [companions],
   );
-
-  // Calcular boletos (solo invitados reales)
-  const ticketInfo = useMemo(() => {
-    const allGuests = [
-      { is_child: false, child_age: null },
-      ...activeCompanions.map((c) => ({
-        is_child: c.is_child,
-        child_age: c.child_age ?? null,
-      })),
-    ];
-    return calculateTickets(allGuests);
-  }, [activeCompanions]);
 
   // Crear slots automáticamente al entrar al paso 3
   useEffect(() => {
@@ -267,6 +256,7 @@ export const RSVPModal = ({
         }
 
         setSuccess(true);
+        onConfirmed?.();
         setTimeout(() => {
           handleClose();
         }, 1600);
@@ -276,7 +266,7 @@ export const RSVPModal = ({
         setLoading(false);
       }
     },
-    [activeCompanions, code, handleClose, mainName, validateAll],
+    [activeCompanions, code, handleClose, mainName, onConfirmed, validateAll],
   );
 
   if (!isOpen) return null;
@@ -423,24 +413,6 @@ export const RSVPModal = ({
                             autoComplete="name"
                           />
                         </div>
-
-                        <div className="rounded-2xl border-2 border-pink-200 bg-pink-50 p-4">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bad-script text-lg text-slate-700">
-                              Total de boletos:
-                            </span>
-                            <span className="font-bold text-2xl text-pink-600">
-                              {ticketInfo.totalTickets}
-                            </span>
-                          </div>
-
-                          {ticketInfo.youngChildren > 0 && (
-                            <p className="mt-2 text-sm text-slate-600">
-                              * Incluye {ticketInfo.youngChildren} niño(s)
-                              menor(es) de 12 años (2 niños = 1 boleto)
-                            </p>
-                          )}
-                        </div>
                       </div>
                     )}
 
@@ -454,28 +426,8 @@ export const RSVPModal = ({
                                 Confirmando como:{" "}
                                 <strong>{mainName || "—"}</strong>
                               </p>
-                              <p className="text-sm text-slate-600">
-                                Acompañantes: {activeCompanions.length}/
-                                {inviteData?.max_companions ?? 0}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-3 sm:justify-end">
-                              <span className="font-bad-script text-lg text-slate-700">
-                                Boletos:
-                              </span>
-                              <span className="font-bold text-2xl text-pink-600">
-                                {ticketInfo.totalTickets}
-                              </span>
                             </div>
                           </div>
-
-                          {ticketInfo.youngChildren > 0 && (
-                            <p className="mt-2 text-sm text-slate-600">
-                              * Incluye {ticketInfo.youngChildren} niño(s)
-                              menor(es) de 12 años (2 niños = 1 boleto)
-                            </p>
-                          )}
                         </div>
 
                         {inviteData?.max_companions ? (

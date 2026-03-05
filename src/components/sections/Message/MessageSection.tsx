@@ -14,7 +14,8 @@ export const MessageSection = () => {
         <div className="space-y-4 text-center">
           <p className="text-lg font-bad-script leading-relaxed text-slate-600">
             Con la bendición de Dios y el amor de mi familia, te invito a
-            celebrar mis XV años.
+            celebrar mis XV años este{" "}
+            <span className="font-dancing-script">21</span> de marzo.
           </p>
           <p className="text-lg font-bad-script leading-relaxed text-slate-600">
             Hay momentos inolvidables que se sueñan, se viven y se recuerdan

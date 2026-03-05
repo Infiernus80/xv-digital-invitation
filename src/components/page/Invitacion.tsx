@@ -15,19 +15,40 @@ import {
 } from "@/components/sections";
 import { RSVPModal } from "@/components/sections/RSVP/RSVPModal";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type InviteStatus = "pending" | "confirmed" | "declined";
 
 type Props = {
   inviteCode?: string;
   autoOpenModal?: boolean;
+  showCoverByDefault?: boolean;
+  redirectToFullOnConfirm?: boolean;
+  inviteStatus?: InviteStatus;
 };
 
 export const InvitationClient = ({
   inviteCode = "",
   autoOpenModal = false,
+  showCoverByDefault = true,
+  redirectToFullOnConfirm = false,
+  inviteStatus,
 }: Props) => {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [showCover, setShowCover] = useState(true);
+  const [showCover, setShowCover] = useState(showCoverByDefault);
   const [fadeCover, setFadeCover] = useState(false);
+  const [currentInviteStatus, setCurrentInviteStatus] = useState<
+    InviteStatus | undefined
+  >(inviteStatus);
+
+  useEffect(() => {
+    setShowCover(showCoverByDefault);
+  }, [showCoverByDefault]);
+
+  useEffect(() => {
+    setCurrentInviteStatus(inviteStatus);
+  }, [inviteStatus]);
 
   useEffect(() => {
     if (autoOpenModal && inviteCode) {
@@ -41,6 +62,18 @@ export const InvitationClient = ({
     setTimeout(() => {
       setShowCover(false);
     }, 700); // Debe coincidir con la duración del fadeOut
+  };
+
+  const handleConfirmed = () => {
+    setCurrentInviteStatus("confirmed");
+
+    if (redirectToFullOnConfirm && inviteCode) {
+      router.push(`/invitacion/${encodeURIComponent(inviteCode)}`);
+      return;
+    }
+
+    setFadeCover(false);
+    setShowCover(false);
   };
 
   return (
@@ -60,7 +93,11 @@ export const InvitationClient = ({
             <CeremonySection />
             <ReceptionSection />
             <DressCodeSection />
-            <RSVPSection inviteCode={inviteCode} />
+            <RSVPSection
+              inviteCode={inviteCode}
+              inviteStatus={currentInviteStatus}
+              onConfirmClick={() => setIsOpen(true)}
+            />
           </>
         )}
       </div>
@@ -69,6 +106,7 @@ export const InvitationClient = ({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         inviteCode={inviteCode}
+        onConfirmed={handleConfirmed}
       />
     </main>
   );
