@@ -35,12 +35,13 @@ export const InvitationClient = ({
   inviteStatus,
 }: Props) => {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showCover, setShowCover] = useState(showCoverByDefault);
-  const [fadeCover, setFadeCover] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [showCover, setShowCover] = useState<boolean>(showCoverByDefault);
+  const [fadeCover, setFadeCover] = useState<boolean>(false);
   const [currentInviteStatus, setCurrentInviteStatus] = useState<
     InviteStatus | undefined
   >(inviteStatus);
+  const [qrToken, setQrToken] = useState<string>("");
 
   useEffect(() => {
     setShowCover(showCoverByDefault);
@@ -48,7 +49,11 @@ export const InvitationClient = ({
 
   useEffect(() => {
     setCurrentInviteStatus(inviteStatus);
-  }, [inviteStatus]);
+
+    if (inviteStatus === "confirmed" && inviteCode) {
+      setQrToken(`token-${inviteCode}`);
+    }
+  }, [inviteStatus, inviteCode]);
 
   useEffect(() => {
     if (autoOpenModal && inviteCode) {
@@ -56,16 +61,17 @@ export const InvitationClient = ({
     }
   }, [autoOpenModal, inviteCode]);
 
-  // Handler para click en el sello
-  const handleSealClick = () => {
+  const handleSealClick = (): void => {
     setFadeCover(true);
+
     setTimeout(() => {
       setShowCover(false);
-    }, 700); // Debe coincidir con la duración del fadeOut
+    }, 700);
   };
 
-  const handleConfirmed = () => {
+  const handleConfirmed = (): void => {
     setCurrentInviteStatus("confirmed");
+    setQrToken(`token-${inviteCode}`);
 
     if (redirectToFullOnConfirm && inviteCode) {
       router.push(`/invitacion/${encodeURIComponent(inviteCode)}`);
@@ -79,10 +85,9 @@ export const InvitationClient = ({
   return (
     <main className="min-h-dvh bg-white">
       <div className="mx-auto w-full max-w-105 overflow-hidden">
-        {showCover && (
+        {showCover ? (
           <CoverSection fadeOut={fadeCover} onSealClick={handleSealClick} />
-        )}
-        {!showCover && (
+        ) : (
           <>
             <HeroSection />
             <MusicSection />
@@ -96,6 +101,7 @@ export const InvitationClient = ({
             <RSVPSection
               inviteCode={inviteCode}
               inviteStatus={currentInviteStatus}
+              qrToken={qrToken}
               onConfirmClick={() => setIsOpen(true)}
             />
           </>

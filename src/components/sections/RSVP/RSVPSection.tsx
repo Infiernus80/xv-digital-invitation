@@ -1,28 +1,30 @@
 "use client";
 
 import Image from "next/image";
+import { InvitationQr } from "../InvitationQr/InvitationQr";
 
 type RSVPSectionProps = {
   inviteCode?: string;
   inviteStatus?: "pending" | "confirmed" | "declined";
+  qrToken?: string;
   onConfirmClick?: () => void;
 };
 
 export const RSVPSection = ({
   inviteCode: _inviteCode = "",
   inviteStatus,
+  qrToken = "",
   onConfirmClick,
 }: RSVPSectionProps) => {
   const isConfirmed = inviteStatus === "confirmed";
+  const canShowQr = isConfirmed && _inviteCode.length > 0 && qrToken.length > 0;
 
   return (
     <section className="w-full py-8 sm:py-12 md:py-16">
       <div className="mx-auto max-w-110 px-4 sm:px-6 md:px-8">
         <div className="text-center">
-          {isConfirmed ? (
-            <p className="font-bad-script text-xl sm:text-2xl text-slate-700">
-              Aquí estará tu QR para ingresar
-            </p>
+          {canShowQr ? (
+            <InvitationQr inviteCode={_inviteCode} qrToken={qrToken} />
           ) : (
             <button
               onClick={onConfirmClick}
