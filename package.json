@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "@tailwindcss/vite": "^4.1.18",
+    "@zxing/browser": "^0.1.5",
     "next": "16.1.1",
     "postcss": "^8.5.6",
     "qrcode": "^1.5.4",
