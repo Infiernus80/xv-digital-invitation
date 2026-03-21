@@ -41,6 +41,14 @@ type GuestDetails = {
   checked_in_at?: string;
   main_full_name?: string;
   companions: CompanionItem[];
+  counter?: {
+    allowed_tickets: number;
+    used_tickets: number;
+    remaining_tickets: number;
+    entered_adults: number;
+    entered_young_children: number;
+    young_child_age_limit: number;
+  };
 };
 
 type ScannerControls = {
@@ -100,6 +108,23 @@ export const AccessControlPanel = () => {
   const selectedGuest = useMemo(() => {
     return guests.find((guest) => guest.invite_code === selectedCode);
   }, [guests, selectedCode]);
+
+  const entryCounter = useMemo(() => {
+    const counter = details?.counter;
+
+    if (!counter) {
+      return null;
+    }
+
+    return {
+      allowedTickets: counter.allowed_tickets,
+      usedTickets: counter.used_tickets,
+      remainingTickets: counter.remaining_tickets,
+      enteredAdults: counter.entered_adults,
+      enteredYoungChildren: counter.entered_young_children,
+      youngChildAgeLimit: counter.young_child_age_limit,
+    };
+  }, [details]);
 
   const activeInviteCode = selectedGuest?.invite_code ?? selectedCode;
 
@@ -235,6 +260,7 @@ export const AccessControlPanel = () => {
           message?: string;
           error?: string;
           checkedAt?: string;
+          counter?: GuestDetails["counter"];
         };
 
         if (!res.ok) {
@@ -604,6 +630,29 @@ export const AccessControlPanel = () => {
             <p className="text-sm tracking-[0.16em] text-slate-600">
               {activeInviteCode || "-"}
             </p>
+
+            {entryCounter ? (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <p className="font-semibold tracking-[0.12em]">
+                  CONTADOR DE INGRESO
+                </p>
+                <p className="mt-1">
+                  Cupos usados: <strong>{entryCounter.usedTickets}</strong> /{" "}
+                  <strong>{entryCounter.allowedTickets}</strong>
+                </p>
+                <p>
+                  Adultos registrados: <strong>{entryCounter.enteredAdults}</strong>
+                </p>
+                <p>
+                  Niños 2x1 (≤ {entryCounter.youngChildAgeLimit - 1} años):{" "}
+                  <strong>{entryCounter.enteredYoungChildren}</strong>
+                </p>
+                <p>
+                  Cupos disponibles: <strong>{entryCounter.remainingTickets}</strong>
+                </p>
+              </div>
+            ) : null}
+
             <p className="mt-2 text-sm text-slate-600">
               RSVP: {selectedGuest?.status || details?.status || "sin estado"}
             </p>

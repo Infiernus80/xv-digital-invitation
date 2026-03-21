@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { calculateTickets, getChildTicketAgeLimit } from "@/lib/ticketUtils";
 
 type Companion = {
   id: string;
@@ -20,6 +21,14 @@ type GuestDetails = {
   checked_in_at?: string;
   main_full_name?: string;
   companions: Companion[];
+  counter: {
+    allowed_tickets: number;
+    used_tickets: number;
+    remaining_tickets: number;
+    entered_adults: number;
+    entered_young_children: number;
+    young_child_age_limit: number;
+  };
 };
 
 type RsvpRow = {
@@ -129,6 +138,37 @@ export async function GET(req: Request) {
       };
     });
 
+  const youngChildAgeLimit = getChildTicketAgeLimit();
+
+  const allowedTickets = calculateTickets([
+    { is_child: false },
+    ...companions.map((companion) => ({
+      is_child: companion.is_child,
+      child_age: companion.child_age,
+    })),
+  ]).totalTickets;
+
+  const enteredAdults =
+    (mainCheckInRow ? 1 : 0) +
+    companions.filter(
+      (companion) =>
+        companion.checked_in &&
+        (!companion.is_child ||
+          (typeof companion.child_age === "number" &&
+            companion.child_age >= youngChildAgeLimit)),
+    ).length;
+
+  const enteredYoungChildren = companions.filter(
+    (companion) =>
+      companion.checked_in &&
+      companion.is_child &&
+      typeof companion.child_age === "number" &&
+      companion.child_age < youngChildAgeLimit,
+  ).length;
+
+  const usedTickets = enteredAdults + Math.ceil(enteredYoungChildren / 2);
+  const remainingTickets = Math.max(allowedTickets - usedTickets, 0);
+
   const details: GuestDetails = {
     id: guestId,
     invite_code: readString(guestRow.invite_code),
@@ -141,6 +181,14 @@ export async function GET(req: Request) {
       readString(guestRow.alias) ??
       readString(guestRow.name),
     companions,
+    counter: {
+      allowed_tickets: allowedTickets,
+      used_tickets: usedTickets,
+      remaining_tickets: remainingTickets,
+      entered_adults: enteredAdults,
+      entered_young_children: enteredYoungChildren,
+      young_child_age_limit: youngChildAgeLimit,
+    },
   };
 
   return NextResponse.json(details);

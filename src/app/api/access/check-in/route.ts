@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { calculateTickets, getChildTicketAgeLimit } from "@/lib/ticketUtils";
 
 type CheckInBody = {
   inviteCode?: string;
@@ -18,6 +19,13 @@ type GuestRow = {
   alias?: string;
 };
 
+type RsvpRow = {
+  id?: string;
+  role?: string;
+  is_child?: boolean;
+  child_age?: number;
+};
+
 const parseGuest = (row: Record<string, unknown>): GuestRow => ({
   id: typeof row.id === "string" ? row.id : undefined,
   invite_code:
@@ -26,6 +34,79 @@ const parseGuest = (row: Record<string, unknown>): GuestRow => ({
   status: typeof row.status === "string" ? row.status : undefined,
   alias: typeof row.alias === "string" ? row.alias : undefined,
 });
+
+const isMainRole = (role?: string) => {
+  const normalized = (role || "").toLowerCase();
+  return normalized === "main" || normalized === "titular";
+};
+
+const isCheckInCompanionRole = (role?: string) =>
+  (role || "").startsWith("checkin_companion:");
+
+const normalizeRsvp = (row: Record<string, unknown>): RsvpRow => ({
+  id: typeof row.id === "string" ? row.id : undefined,
+  role: typeof row.role === "string" ? row.role : undefined,
+  is_child: typeof row.is_child === "boolean" ? row.is_child : undefined,
+  child_age: typeof row.child_age === "number" ? row.child_age : undefined,
+});
+
+const buildCounter = (params: {
+  rsvps: RsvpRow[];
+  includeMain?: boolean;
+  includeCompanionId?: string;
+}) => {
+  const { rsvps, includeMain = false, includeCompanionId } = params;
+
+  const companions = rsvps.filter(
+    (row) =>
+      !!row.id &&
+      !isMainRole(row.role) &&
+      row.role !== "checkin_main" &&
+      !isCheckInCompanionRole(row.role),
+  );
+
+  const allowedTickets = calculateTickets([
+    { is_child: false },
+    ...companions.map((row) => ({
+      is_child: !!row.is_child,
+      child_age: row.child_age,
+    })),
+  ]).totalTickets;
+
+  const hasMainCheckIn = rsvps.some((row) => row.role === "checkin_main");
+  const checkedCompanionIds = new Set(
+    rsvps
+      .map((row) => row.role || "")
+      .filter((role) => role.startsWith("checkin_companion:"))
+      .map((role) => role.replace("checkin_companion:", ""))
+      .filter((id) => id.length > 0),
+  );
+
+  const checkedGuests = [
+    ...(hasMainCheckIn || includeMain ? [{ is_child: false }] : []),
+    ...companions
+      .filter((row) => {
+        if (!row.id) {
+          return false;
+        }
+
+        return checkedCompanionIds.has(row.id) || row.id === includeCompanionId;
+      })
+      .map((row) => ({
+        is_child: !!row.is_child,
+        child_age: row.child_age,
+      })),
+  ];
+
+  const usedTickets = calculateTickets(checkedGuests).totalTickets;
+
+  return {
+    allowedTickets,
+    usedTickets,
+    remainingTickets: Math.max(allowedTickets - usedTickets, 0),
+    youngChildAgeLimit: getChildTicketAgeLimit(),
+  };
+};
 
 const upsertRsvpCheckIn = async (params: {
   guestId: string;
@@ -164,9 +245,63 @@ export async function POST(req: Request) {
     }
   }
 
+  const { data: rsvpsRows, error: rsvpsError } = guest.id
+    ? await supabaseServer
+        .from("rsvps")
+        .select("id, role, is_child, child_age")
+        .eq("guest_id", guest.id)
+    : { data: null, error: null };
+
+  if (rsvpsError) {
+    return NextResponse.json(
+      { error: "No se pudo validar el aforo para esta invitación." },
+      { status: 500 },
+    );
+  }
+
+  const rsvps = Array.isArray(rsvpsRows)
+    ? rsvpsRows
+        .filter((row): row is Record<string, unknown> => !!row)
+        .map(normalizeRsvp)
+    : [];
+
+  if (personType === "main") {
+    const preview = buildCounter({ rsvps, includeMain: true });
+
+    if (preview.usedTickets > preview.allowedTickets) {
+      return NextResponse.json(
+        {
+          error:
+            "Se supera el aforo permitido para esta invitación al marcar al titular.",
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   if (personType === "companion") {
+    const companionId = body.companionId?.trim();
+
+    if (!companionId) {
+      return NextResponse.json(
+        { error: "El acompañante a marcar es obligatorio." },
+        { status: 400 },
+      );
+    }
+
+    const preview = buildCounter({ rsvps, includeCompanionId: companionId });
+
+    if (preview.usedTickets > preview.allowedTickets) {
+      return NextResponse.json(
+        {
+          error: `Aforo completo para este código. Cupos usados: ${preview.usedTickets}/${preview.allowedTickets}. Regla niños 2x1 para ${preview.youngChildAgeLimit - 1} años o menos.`,
+        },
+        { status: 409 },
+      );
+    }
+
     const companionResult = await markCompanionCheckIn({
-      companionId: body.companionId?.trim(),
+      companionId,
       companionName: body.companionName?.trim(),
       sourceTable: body.sourceTable?.trim(),
     });
@@ -184,6 +319,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: `Ingreso registrado para ${body.companionName?.trim() || "acompanante"}.`,
       checkedAt: new Date().toISOString(),
+      counter: buildCounter({ rsvps, includeCompanionId: companionId }),
     });
   }
 
@@ -202,5 +338,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     message: "Entrada marcada correctamente.",
     checkedAt: new Date().toISOString(),
+    counter: buildCounter({ rsvps, includeMain: true }),
   });
 }
