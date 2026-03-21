@@ -19,8 +19,8 @@ export function calculateTickets(guests: RSVPGuest[]): {
   childTickets: number;
 } {
   let adults = 0;
-  let childrenAsAdults = 0; // Niños >= 12 años
-  let youngChildren = 0; // Niños < 12 años
+  let childrenAsAdults = 0; // Niños que cuentan boleto completo
+  let youngChildren = 0; // Niños que entran en la regla 2x1
 
   guests.forEach((guest) => {
     if (!guest.is_child) {

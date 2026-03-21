@@ -43,6 +43,9 @@ const normalizeGuest = (row: Record<string, unknown>): GuestRecord => {
       typeof row.checked_in === "boolean" ? row.checked_in : undefined,
     checked_in_at:
       typeof row.checked_in_at === "string" ? row.checked_in_at : undefined,
+    main_full_name: undefined,
+    matched_name: undefined,
+    matched_role: undefined,
   };
 };
 

@@ -51,6 +51,12 @@ type GuestDetails = {
   };
 };
 
+type AccessCounter = {
+  adults: number;
+  children: number;
+  total: number;
+};
+
 type ScannerControls = {
   stop: () => void;
 };
@@ -96,6 +102,11 @@ export const AccessControlPanel = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [details, setDetails] = useState<GuestDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
+  const [accessCounter, setAccessCounter] = useState<AccessCounter>({
+    adults: 0,
+    children: 0,
+    total: 0,
+  });
   const [scanHint, setScanHint] = useState<string>(
     "Escanea un QR o busca por código/nombre.",
   );
@@ -109,22 +120,33 @@ export const AccessControlPanel = () => {
     return guests.find((guest) => guest.invite_code === selectedCode);
   }, [guests, selectedCode]);
 
-  const entryCounter = useMemo(() => {
-    const counter = details?.counter;
+  const fetchAccessCounter = useCallback(async () => {
+    try {
+      const response = await fetch("/api/access/counter");
+      const data = (await response.json()) as
+        | AccessCounter
+        | {
+            error?: string;
+            adults?: number;
+            children?: number;
+            total?: number;
+          };
 
-    if (!counter) {
-      return null;
+      if (!response.ok) {
+        throw new Error(
+          ("error" in data && data.error) || "No se pudo cargar el contador.",
+        );
+      }
+
+      setAccessCounter({
+        adults: typeof data.adults === "number" ? data.adults : 0,
+        children: typeof data.children === "number" ? data.children : 0,
+        total: typeof data.total === "number" ? data.total : 0,
+      });
+    } catch {
+      setAccessCounter({ adults: 0, children: 0, total: 0 });
     }
-
-    return {
-      allowedTickets: counter.allowed_tickets,
-      usedTickets: counter.used_tickets,
-      remainingTickets: counter.remaining_tickets,
-      enteredAdults: counter.entered_adults,
-      enteredYoungChildren: counter.entered_young_children,
-      youngChildAgeLimit: counter.young_child_age_limit,
-    };
-  }, [details]);
+  }, []);
 
   const activeInviteCode = selectedGuest?.invite_code ?? selectedCode;
 
@@ -280,6 +302,7 @@ export const AccessControlPanel = () => {
         setSelectedCode(inviteCode);
         await fetchGuests(query);
         await fetchGuestDetails(inviteCode);
+        await fetchAccessCounter();
       } catch (error) {
         setErrorMessage(
           error instanceof Error ? error.message : "No se pudo marcar entrada.",
@@ -288,7 +311,7 @@ export const AccessControlPanel = () => {
         setIsMarkingEntry(false);
       }
     },
-    [fetchGuestDetails, fetchGuests, query],
+    [fetchAccessCounter, fetchGuestDetails, fetchGuests, query],
   );
 
   const handleScanResult = useCallback(
@@ -415,6 +438,10 @@ export const AccessControlPanel = () => {
   );
 
   useEffect(() => {
+    void fetchAccessCounter();
+  }, [fetchAccessCounter]);
+
+  useEffect(() => {
     return () => {
       stopScanner();
     };
@@ -439,6 +466,32 @@ export const AccessControlPanel = () => {
           <p className="mt-1 text-sm text-slate-600">
             Busca invitados, escanea su QR y registra su ingreso.
           </p>
+
+          <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-indigo-600">
+              Contador de ingresos
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-white/80 p-3">
+                <p className="text-xs text-slate-500">Adultos</p>
+                <p className="text-xl font-bold text-slate-800">
+                  {accessCounter.adults}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/80 p-3">
+                <p className="text-xs text-slate-500">Niños</p>
+                <p className="text-xl font-bold text-slate-800">
+                  {accessCounter.children}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/80 p-3">
+                <p className="text-xs text-slate-500">Total</p>
+                <p className="text-xl font-bold text-slate-800">
+                  {accessCounter.total}
+                </p>
+              </div>
+            </div>
+          </div>
 
           <label
             className="mt-5 block text-sm font-semibold text-slate-700"
@@ -630,28 +683,6 @@ export const AccessControlPanel = () => {
             <p className="text-sm tracking-[0.16em] text-slate-600">
               {activeInviteCode || "-"}
             </p>
-
-            {entryCounter ? (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                <p className="font-semibold tracking-[0.12em]">
-                  CONTADOR DE INGRESO
-                </p>
-                <p className="mt-1">
-                  Cupos usados: <strong>{entryCounter.usedTickets}</strong> /{" "}
-                  <strong>{entryCounter.allowedTickets}</strong>
-                </p>
-                <p>
-                  Adultos registrados: <strong>{entryCounter.enteredAdults}</strong>
-                </p>
-                <p>
-                  Niños 2x1 (≤ {entryCounter.youngChildAgeLimit - 1} años):{" "}
-                  <strong>{entryCounter.enteredYoungChildren}</strong>
-                </p>
-                <p>
-                  Cupos disponibles: <strong>{entryCounter.remainingTickets}</strong>
-                </p>
-              </div>
-            ) : null}
 
             <p className="mt-2 text-sm text-slate-600">
               RSVP: {selectedGuest?.status || details?.status || "sin estado"}
