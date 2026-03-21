@@ -12,11 +12,14 @@ import {
 type GuestItem = {
   id?: string;
   alias?: string;
+  main_full_name?: string;
   invite_code?: string;
   status?: string;
   max_companions?: number;
   checked_in?: boolean;
   checked_in_at?: string;
+  matched_name?: string;
+  matched_role?: string;
 };
 
 type CompanionItem = {
@@ -75,6 +78,7 @@ const parseInviteCodeFromScan = (
 export const AccessControlPanel = () => {
   const [query, setQuery] = useState<string>("");
   const [guests, setGuests] = useState<GuestItem[]>([]);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
   const [isLoadingGuests, setIsLoadingGuests] = useState<boolean>(false);
   const [selectedCode, setSelectedCode] = useState<string>("");
   const [isStartingScanner, setIsStartingScanner] = useState<boolean>(false);
@@ -96,6 +100,8 @@ export const AccessControlPanel = () => {
   const selectedGuest = useMemo(() => {
     return guests.find((guest) => guest.invite_code === selectedCode);
   }, [guests, selectedCode]);
+
+  const activeInviteCode = selectedGuest?.invite_code ?? selectedCode;
 
   const stopScanner = useCallback(() => {
     controlsRef.current?.stop();
@@ -179,6 +185,12 @@ export const AccessControlPanel = () => {
       setIsLoadingDetails(false);
     }
   }, []);
+
+  const handleSearch = useCallback(async () => {
+    setHasSearched(true);
+    setErrorMessage("");
+    await fetchGuests(query);
+  }, [fetchGuests, query]);
 
   const markEntry = useCallback(
     async (params: {
@@ -377,14 +389,6 @@ export const AccessControlPanel = () => {
   );
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchGuests(query);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [fetchGuests, query]);
-
-  useEffect(() => {
     return () => {
       stopScanner();
     };
@@ -416,18 +420,37 @@ export const AccessControlPanel = () => {
           >
             Buscador
           </label>
-          <input
-            id="search-guests"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Ej: FAM001 o Apellido"
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-rose-200 transition focus:ring"
-          />
+          <form
+            className="mt-2 flex gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSearch();
+            }}
+          >
+            <input
+              id="search-guests"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Ej: FAM001 o Apellido"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-rose-200 transition focus:ring"
+            />
+            <button
+              type="submit"
+              disabled={isLoadingGuests}
+              className="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Buscar
+            </button>
+          </form>
 
           <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
             <span>
-              {isLoadingGuests ? "Buscando..." : `${guests.length} resultados`}
+              {isLoadingGuests
+                ? "Buscando..."
+                : hasSearched
+                  ? `${guests.length} resultados`
+                  : "Sin busqueda"}
             </span>
             <span>
               {selectedGuest?.invite_code
@@ -437,6 +460,13 @@ export const AccessControlPanel = () => {
           </div>
 
           <div className="mt-3 max-h-[52dvh] space-y-2 overflow-auto pr-1">
+            {!hasSearched && !isLoadingGuests ? (
+              <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                Escribe un código o nombre y presiona Buscar para ver
+                resultados.
+              </p>
+            ) : null}
+
             {guests.map((guest) => {
               const code = guest.invite_code ?? "";
               const isSelected = code.length > 0 && code === selectedCode;
@@ -453,11 +483,24 @@ export const AccessControlPanel = () => {
                   }`}
                 >
                   <p className="font-semibold text-slate-800">
-                    {guest.alias || "Sin alias"}
+                    {guest.main_full_name || guest.alias || "Sin nombre"}
                   </p>
                   <p className="text-xs tracking-[0.18em] text-slate-600">
                     {code || "SIN CÓDIGO"}
                   </p>
+                  {!guest.matched_role ||
+                  guest.matched_role === "main" ||
+                  guest.matched_role === "titular" ? null : (
+                    <p className="mt-1 text-xs text-indigo-700">
+                      Coincidio por acompanante:{" "}
+                      {guest.matched_name || "sin nombre"}
+                    </p>
+                  )}
+                  {guest.main_full_name ? (
+                    <p className="mt-1 text-xs text-slate-600">
+                      Principal: {guest.main_full_name}
+                    </p>
+                  ) : null}
                   <div className="mt-1 flex items-center gap-2 text-xs">
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
                       RSVP: {guest.status || "sin estado"}
@@ -534,14 +577,14 @@ export const AccessControlPanel = () => {
             <button
               type="button"
               onClick={() => {
-                if (selectedGuest?.invite_code) {
+                if (activeInviteCode) {
                   void markEntry({
-                    inviteCode: selectedGuest.invite_code,
+                    inviteCode: activeInviteCode,
                     personType: "main",
                   });
                 }
               }}
-              disabled={!selectedGuest?.invite_code || isMarkingEntry}
+              disabled={!activeInviteCode || isMarkingEntry}
               className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isMarkingEntry ? "Marcando..." : "Marcar entrada manual"}
@@ -553,29 +596,35 @@ export const AccessControlPanel = () => {
               Invitado seleccionado
             </p>
             <p className="mt-1 text-lg font-semibold text-slate-800">
-              {selectedGuest?.alias || "Ninguno"}
+              {selectedGuest?.main_full_name ||
+                details?.main_full_name ||
+                selectedGuest?.alias ||
+                "Ninguno"}
             </p>
             <p className="text-sm tracking-[0.16em] text-slate-600">
-              {selectedGuest?.invite_code || "-"}
+              {activeInviteCode || "-"}
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              RSVP: {selectedGuest?.status || "sin estado"}
+              RSVP: {selectedGuest?.status || details?.status || "sin estado"}
             </p>
             <p className="text-sm text-slate-600">
-              Ingreso: {selectedGuest?.checked_in ? "Registrado" : "Pendiente"}
+              Ingreso:{" "}
+              {selectedGuest?.checked_in || details?.checked_in
+                ? "Registrado"
+                : "Pendiente"}
             </p>
 
             <button
               type="button"
               onClick={() => {
-                if (selectedGuest?.invite_code) {
+                if (activeInviteCode) {
                   void markEntry({
-                    inviteCode: selectedGuest.invite_code,
+                    inviteCode: activeInviteCode,
                     personType: "main",
                   });
                 }
               }}
-              disabled={!selectedGuest?.invite_code || isMarkingEntry}
+              disabled={!activeInviteCode || isMarkingEntry}
               className="mt-3 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isMarkingEntry ? "Marcando..." : "Marcar titular"}
@@ -615,12 +664,12 @@ export const AccessControlPanel = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          if (!selectedGuest?.invite_code) {
+                          if (!activeInviteCode) {
                             return;
                           }
 
                           void markEntry({
-                            inviteCode: selectedGuest.invite_code,
+                            inviteCode: activeInviteCode,
                             personType: "companion",
                             companionId: companion.id,
                             companionName: companion.full_name,
