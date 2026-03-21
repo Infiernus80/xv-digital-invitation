@@ -92,14 +92,12 @@ export async function GET(req: Request) {
     : [];
 
   const matchedRsvps = Array.isArray(matchedRsvpsResult.data)
-    ? matchedRsvpsResult.data
-        .filter((row): row is Record<string, unknown> => !!row)
-        .map((row) => ({
-          guest_id: typeof row.guest_id === "string" ? row.guest_id : undefined,
-          full_name:
-            typeof row.full_name === "string" ? row.full_name : undefined,
-          role: typeof row.role === "string" ? row.role : undefined,
-        }))
+    ? matchedRsvpsResult.data.filter(Boolean).map((row) => ({
+        guest_id: typeof row.guest_id === "string" ? row.guest_id : undefined,
+        full_name:
+          typeof row.full_name === "string" ? row.full_name : undefined,
+        role: typeof row.role === "string" ? row.role : undefined,
+      }))
     : [];
 
   const guestIdsFromRsvp = Array.from(
@@ -180,19 +178,16 @@ export async function GET(req: Request) {
   }
 
   const rsvps = Array.isArray(rsvpRows)
-    ? rsvpRows
-        .filter((row): row is Record<string, unknown> => !!row)
-        .map(
-          (row): RsvpLite => ({
-            guest_id:
-              typeof row.guest_id === "string" ? row.guest_id : undefined,
-            full_name:
-              typeof row.full_name === "string" ? row.full_name : undefined,
-            role: typeof row.role === "string" ? row.role : undefined,
-            created_at:
-              typeof row.created_at === "string" ? row.created_at : undefined,
-          }),
-        )
+    ? rsvpRows.filter(Boolean).map(
+        (row): RsvpLite => ({
+          guest_id: typeof row.guest_id === "string" ? row.guest_id : undefined,
+          full_name:
+            typeof row.full_name === "string" ? row.full_name : undefined,
+          role: typeof row.role === "string" ? row.role : undefined,
+          created_at:
+            typeof row.created_at === "string" ? row.created_at : undefined,
+        }),
+      )
     : [];
 
   const mainByGuest = new Map<string, string>();
