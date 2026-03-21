@@ -261,8 +261,8 @@ export async function POST(req: Request) {
 
   const rsvps = Array.isArray(rsvpsRows)
     ? rsvpsRows
-        .filter((row): row is Record<string, unknown> => !!row)
-        .map(normalizeRsvp)
+        .filter(Boolean)
+        .map((row) => normalizeRsvp(row as Record<string, unknown>))
     : [];
 
   if (personType === "main") {
